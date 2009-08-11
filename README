@@ -25,7 +25,7 @@ once macros, the type system and general desugaring have already taken place.
 ( A little similar to "core" in Glasgow Haskell ).
 
    For more information on Delve and the progress of development, see my blog 
-at http://killersmurf.blogspot.com, and the Delve repository at
+at http://killersmurf.blogspot.com, and the Delve repository at http://github.com/elginer/Delve
 
                              ***Prerequisites***
 
@@ -56,7 +56,7 @@ On systems without sh,
 runghc -cpp build.hs
 
    This will build Delve, and create three new files in the current directory: edc,
-edvm, and edvm.dui.   A message will appear advising you to save edvm into /etc/delve.
+edvm, and edvm.dui.   A message will appear advising you to save edvm.dui into /etc/delve.
 Heed this advice!
 
    edc is the Elgin Delve Compiler.  edvm is the Elgin Delve Virtual Machine.  Try 
