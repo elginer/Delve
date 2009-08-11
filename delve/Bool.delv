@@ -1,0 +1,85 @@
+//    The Delve programming language
+//    Copyright 2009 John Morrice
+//
+//    Distributed under the terms of the GNU General Public License v3, or ( at your option ) any later version.
+//
+//    This file is part of Delve.
+//
+//    Delve is free software: you can redistribute it and/or modify
+//    it under the terms of the GNU General Public License as published by
+//    the Free Software Foundation, either version 3 of the License, or
+//    (at your option) any later version.
+//
+//    Delve is distributed in the hope that it will be useful,
+//    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//    GNU General Public License for more details.
+//
+//    You should have received a copy of the GNU General Public License
+//    along with Delve.  If not, see <http://www.gnu.org/licenses/>.
+
+// Actually this class doesn't have to be compiled into the VM
+// But since other classes which must be in the VM might want to use it, here it is
+// The class for booleans
+(: Bool (Object.new))
+
+// Boolean instance methods
+(: Bool.instance_methods (Object.new))
+
+// Bool's new method
+(: Bool.new
+   (me (sym)
+       ((: instance (Object.new)) 
+        (: instance.class self)
+        (instance.initialize (Symbol.new sym))
+        instance)))
+
+
+// Initialization
+// Just save the sym in self
+(: Bool.instance_methods.initialize
+   (me (sym)
+       ((: self.sym sym))))
+
+// The global false value
+(: False 
+   (Bool.new #False))
+
+// The global true value
+(: True
+   (Bool.new #True))
+
+// not
+(: Bool.instance_methods.not
+   (me ()
+       ((match self.sym.prim
+               (-> #True  (False))
+               (-> #False (True))))))
+// nand
+(: Bool.instance_methods.nand
+   (me (other)
+       ((match self.sym.prim
+               (-> #True ((match other.sym.prim
+                                 (-> #True (False))
+                                 (-> #False (True)))))
+               (-> #False (True))))))
+
+// and
+(: Bool.instance_methods.and
+   (me (other)
+       ((: n (self.nand other))
+        (n.not))))
+
+// or
+(: Bool.instance_methods.or
+   (me (q)
+       ((: ntp (self.nand True))
+        (: ntq (q.nand True))
+        (ntp.nand ntq))))
+
+// print
+(: Bool.instance_methods.print
+   (me ()
+       ((self.sym.print))))
+
+

@@ -1,0 +1,125 @@
+//    The Delve programming language
+//    Copyright 2009 John Morrice
+//
+//    Distributed under the terms of the GNU General Public License v3, or ( at your option ) any later version.
+//
+//    This file is part of Delve.
+//
+//    Delve is free software: you can redistribute it and/or modify
+//    it under the terms of the GNU General Public License as published by
+//    the Free Software Foundation, either version 3 of the License, or
+//    (at your option) any later version.
+//
+//    Delve is distributed in the hope that it will be useful,
+//    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//    GNU General Public License for more details.
+//
+//    You should have received a copy of the GNU General Public License
+//    along with Delve.  If not, see <http://www.gnu.org/licenses/>.
+
+// This module describes the Int class
+
+// We'll need some Haskell helper functions to get at the primative values
+[hsimports]
+import DHelper
+import Foreign.Marshal.Alloc
+import Foreign.Ptr
+[/hsimports]
+// Create an object for the Int class
+(: Int (Object.new))
+
+// Create the object to hold its instance methods
+(: Int.instance_methods (Object.new))
+
+// The constructor
+(: Int.instance_methods.initialize
+   // Save the primative value as self.prim
+   (me (prim) ((: self.prim prim))))
+
+// Addition
+(: Int.instance_methods.+ 
+   (me (other)
+       // embedded haskell code to perform the calculation
+       ((: machine_addition [hsexp] add_ints [/hsexp])
+        (: p (machine_addition self.prim other.prim))
+        (Int.new p))))
+
+// Subtraction
+(: Int.instance_methods.-
+   (me (other)
+       // embedded haskell code to perform the calculation
+       ((: machine_subtraction [hsexp] subtract_ints [/hsexp])
+        (Int.new (machine_subtraction self.prim other.prim)))))
+
+// Less than or equal to
+(: Int.instance_methods.<=
+   (me (other)
+       (//(stats)
+        (: machine_lte [hsexp] primative_lte [/hsexp])
+        //(stats)
+        (Bool.new (machine_lte self.prim other.prim)))))
+
+// Eq
+(: Int.instance_methods.=
+   (me (other)
+       ((: machine_eq [hsexp] primative_eq [/hsexp])
+        (Bool.new (machine_eq self.prim other.prim)))))
+
+// Gt
+(: Int.instance_methods.>
+   (me (other)
+       (//(stats)
+        (: lte (self.<= other))
+        //(stats)
+        (lte.not))))
+
+// GTE
+(: Int.instance_methods.>=
+   (me (other)
+       ((: gt (self.> other))
+       (gt.or (self.= other)))))
+
+// Less than
+(: Int.instance_methods.<
+   (me (other)
+       ((: lte (self.<= other))
+        (: eq  (self.= other))
+        (lte.and (eq.not)))))
+
+// Multiplication 
+(: Int.instance_methods.*
+   (me (other)
+       (([hsexp] primative_mult [/hsexp] self.prim other.prim))))
+
+// Division
+(: Int.instance_methods./
+   (me (other)
+       (([hsexp] primative_div [/hsexp] self.prim other.prim))))
+
+// Power
+(: Int.instance_methods.^
+   (me (other)
+       (([hsexp] primative_pow [/hsexp] self.prim other.prim))))
+
+// A test method which prints the value of the primative
+(: Int.instance_methods.print
+   (me ()
+       ((: machine_print [hsexp] print_int [/hsexp])
+        (machine_print self.prim))))
+
+// Int's new method - create a new Int
+(: Int.new 
+   (me (prim)
+        // create a new object
+       ( //(stats)
+        (: instance (Object.new))
+        // set the instance's class to the Int class
+        (: instance.class self) 
+        // initialize the instance
+        (instance.initialize prim)
+        // return the instance
+       // (stats)
+        instance)))
+
+

@@ -1,0 +1,50 @@
+//    The Delve programming language
+//    Copyright 2009 John Morrice
+//
+//    Distributed under the terms of the GNU General Public License v3, or ( at your option ) any later version.
+//
+//    This file is part of Delve.
+//
+//    Delve is free software: you can redistribute it and/or modify
+//    it under the terms of the GNU General Public License as published by
+//    the Free Software Foundation, either version 3 of the License, or
+//    (at your option) any later version.
+//
+//    Delve is distributed in the hope that it will be useful,
+//    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//    GNU General Public License for more details.
+//
+//    You should have received a copy of the GNU General Public License
+//    along with Delve.  If not, see <http://www.gnu.org/licenses/>.
+
+// The base class in delve is the Object
+
+[hsimports]
+import DHelper
+import DelveVM
+import Data.Map as M
+[/hsimports]
+
+(: stats [hsexp] stats [/hsexp])
+
+(: current [hsexp] do { o <- get_current_object;
+                        liftIO $ Prelude.putStrLn "Current object:";
+                        liftIO $ Prelude.putStrLn $ show $ M.keys $ members o; }[/hsexp])
+
+(: print_obj [hsexp]
+                do { a <- get_arg 0;
+                     liftIO $ do { 
+                        o <- readIORef $ get_object a;
+                        Prelude.putStrLn "An Object:";
+                        Prelude.putStrLn $ show $ M.keys $ members o; 
+                     };
+                }
+             [/hsexp])
+// a function which produces new objects
+(: mk_obj [hsexp] new [/hsexp])
+
+// create the object class
+(: Object (mk_obj))
+// define the Object class' member 'new' to be the function which creates objects
+(: Object.new mk_obj)

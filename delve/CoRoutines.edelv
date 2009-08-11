@@ -1,0 +1,85 @@
+//    The Delve programming language
+//    Copyright 2009 John Morrice
+//
+//    Distributed under the terms of the GNU General Public License v3, or ( at your option ) any later version.
+//
+//    This file is part of Delve.
+//
+//    Delve is free software: you can redistribute it and/or modify
+//    it under the terms of the GNU General Public License as published by
+//    the Free Software Foundation, either version 3 of the License, or
+//    (at your option) any later version.
+//
+//    Delve is distributed in the hope that it will be useful,
+//    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//    GNU General Public License for more details.
+//
+//    You should have received a copy of the GNU General Public License
+//    along with Delve.  If not, see <http://www.gnu.org/licenses/>.
+
+// Test the functionality of continuations
+// Inspired by http://community.schemewiki.org/?call-with-current-continuation
+
+// Co-routines are a good test that continuations are working -
+// both non-local exit and non-local entry have to be right :)
+
+// Also this leaks memory, but call/cc normally doesn't leak memory.  What is going on?
+// This should be examined to see why!
+
+// a lengthy computation
+([hsexp] liftIO $ Prelude.putStrLn "hmm" [/hsexp])
+(: hefty-function
+   (fu (other-stuff)
+       ((: lim (Int.new 3000))
+        (: loop 
+           (fu (n)
+               (//(stats)
+                //([hsexp] vm_dump [/hsexp])
+                ([hsexp] print_sym [/hsexp] #hefty!)
+                (n.print)
+                (:! other-stuff (call/cc other-stuff))
+                ([hsexp] print_sym [/hsexp] #hefty_b)
+                (:! other-stuff (call/cc other-stuff))
+                ([hsexp] print_sym [/hsexp] #hefty_c)
+                (:! other-stuff (call/cc other-stuff))
+                (: again? (n.< lim))
+                (match again?.sym
+                       (-> #True
+                           ((loop (n.+ (Int.new 1)))))
+                       (-> #False
+                           ((: nice 3)))))))
+        (loop (Int.new 0)))))
+
+// A little class which makes an object which either ticks or tocks
+(: Ticker (Object.new))
+(: Ticker.instance_methods (Object.new))
+(: Ticker.instance_methods.initialize
+   (me () ((: self.ticker #Tick))))
+(: Ticker.instance_methods.change
+   (me () ((match self.ticker
+                  (-> #Tick ((: self.ticker #Tock)))
+                  (-> #Tock ((: self.ticker #Tick)))))))
+(: Ticker.instance_methods.tick
+   (me () (([hsexp] print_sym [/hsexp] self.ticker))))
+(: Ticker.new
+   (me ()
+       ((: instance (Object.new))
+        (: instance.class self)
+        (instance.initialize)
+        instance)))
+
+// a computation which counts the passing of time
+(: little-function
+   (fu (other-stuff)
+       ((: ticker (Ticker.new))
+        (: loop
+           (fu ()
+               ( //(stats)
+                (ticker.tick)
+                (ticker.change)
+                (:! other-stuff (call/cc other-stuff))
+                (loop)))) 
+        (loop))))
+
+(hefty-function little-function)

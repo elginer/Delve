@@ -1,0 +1,61 @@
+//    The Delve programming language
+//    Copyright 2009 John Morrice
+//
+//    Distributed under the terms of the GNU General Public License v3, or ( at your option ) any later version.
+//
+//    This file is part of Delve.
+//
+//    Delve is free software: you can redistribute it and/or modify
+//    it under the terms of the GNU General Public License as published by
+//    the Free Software Foundation, either version 3 of the License, or
+//    (at your option) any later version.
+//
+//    Delve is distributed in the hope that it will be useful,
+//    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//    GNU General Public License for more details.
+//
+//    You should have received a copy of the GNU General Public License
+//    along with Delve.  If not, see <http://www.gnu.org/licenses/>.
+
+[hsimports]
+import DHelper
+import DelveVM
+import Data.ByteString.Char8 as B
+import qualified Data.Map as M
+[/hsimports]
+ 
+// Call with current continuation
+// This also demonstrates how data can be passed between Delve and Haskell 
+(: call/cc
+   (fu (exec)
+       // the machine instruction which performs call/cc
+       ((: machine_call/cc 
+           [hsexp]
+              -- First a bit of VM Code to create a friendlier representation for the continuation
+              let jumper = B.singleton 'j'
+                  cont   = B.singleton 'c'
+                  result = B.singleton 'r'
+                  exec   = B.singleton 'e'
+                  call   = [ PushLocal
+                             , WriteArg 0 exec
+                            -- , MachineInstruction vm_dump
+                             , CallCC [ PushLocal
+                                      , WriteArg 0 cont -- assign the primative continuation to the variable cont
+                                      , NewBlock [ WriteArg 0 result
+                                                -- , MachineInstruction stats 
+                                                 , RefLocal 0 [ result ]
+                                                 , JumpLocal 0 [ cont ] ] -- A function which jumps to the variable "cont"
+                                      , AssignLocal 0 [ ] jumper
+                                      , RememberLocalLocal 0 [ jumper ] -- Remember the local scope
+                                      , PushLocalArg 0 [ jumper ] 0
+                              --        ,  MachineInstruction $ do { cr <- fmap get_code_block $ lookup_local_env 0 [ jumper ]; liftIO $ do { m <- fmap memory_frame $ readIORef cr; sf <- show_io m 0; Prelude.putStrLn $ sf "" } }
+                             --        , MachineInstruction vm_dump
+                    --                  , MachineInstruction $ do { e <- fmap (Prelude.head . Prelude.tail . local_env) get_activation_frame;
+                     --                                             o <- liftIO $ readIORef e;
+                       --                                           liftIO $ print $ M.keys $ env o }
+                                      , LocalTailCallLocal False 1 [ exec ] ]
+                             , PopLocal ] -- Should CallCC be tail-called? Does it matter? There's very little point in call/ccing unless theres some code to return to anyway!
+              in  push_code $! call
+           [/hsexp])
+        (machine_call/cc exec))))

@@ -1,0 +1,311 @@
+Copyright (C) 2009 John Morrice
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.3
+or any later version published by the Free Software Foundation;
+with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
+A copy of the license is included in the file "DOC_COPYING" which you should have recieved along with this document.
+
+(Delve tutorial)
+
+Intro:
+
+   Delve is an eager functional language with object oriented features.  It is currently ( Tue 11 Aug 2009 ) undergoing heavy development!  The type system hasn't even been implemented yet!
+
+   Howeverm if you want to hack upon the Dune Compiler and Dune Virtual Machine, this guide will let you have understanding of what's going on here.  See also the example code in the "delve" folder.
+   
+Syntax:
+   All statements and expressions in Delve are made of S-Expressions.  S-Expressions are of the form
+   SExp := '(' SExp* ')'
+           | Token
+
+   Delve extends this grammar to allow for embedded code for the purpose of extending the virtual machine.
+   SExp := '(' SExp* ')'
+           | Token
+           | '[' special_name ']' special_data '[/' special_name ']'
+
+   Delve supports C-style comments which last from '//' till the newline or end of file.
+
+Statements:
+
+   Delve supports the following statements:
+      Apply
+      Let
+      Begin
+      Set
+      Match
+      Simple
+      Special
+      
+
+   Apply:
+      To apply a function to its arguments, write an S-Expression where the function ( or the name of the variable referencing the function ) is the first token, and its arguments are the rest.
+   Example: Apply the function bound to "fox" to the variables bound to "rabbit" and "mouse"
+      
+      (fox rabbit mouse)
+   
+      In C, this would be written as fox(rabbit,mouse).
+
+      Analysis:
+
+      In Delve, all the tokens are contained within parenthesis.
+
+      In C, two of the tokens are contain within parenthesis.
+      These two tokens are seperated by a comma.
+      The third token is located outside the parenthesis.
+      
+      I hope you see now that S-Expressions leads to a clean syntax!
+
+   Let:
+      Let assigns a variable in the current local scope. The symbol for let is ':'.
+      
+      Example, assign the variable 'nom' to the result of the function applied above
+         
+         (: nom (fox rabbit mouse))   // Again application prefix notation is applied.  This keeps the syntax of Delve consistent!
+
+   Begin:
+      Begin opens a new scope in which the given statements are evaluated.  The symbol for begin is 'do'
+     
+         (do (fox rabbit mouse)
+             (fox rabbit mouse)) // Evaluate (fox rabbit mouse) twice
+
+   Set:
+      Set updates the value of a variable in a possibly different scope.  The symbol for set is ':!'
+         Example
+            // Let character be equal to Rotti
+            (: character Rotti)
+            (do (:! character Shilo) // This updates the value of character to Shilo
+                (:! character Mag)) // This updates the value of character to GraveRobber
+            // character is now mag
+ 
+         Counter-example:
+            // Let character be equal to Rotti
+            (: character Rotti)
+            (do (: character Nathan) // This doesn't update the value of character in the lower scope
+                (:! character Amber)) // Same again
+            // character is now Rotti
+   
+   Simple:
+      A simple expression "returns" a simple value immediately.
+      Supported are literal integers ( 64-bit ) and symbols, and variables, which are deferenced.
+         Example:
+            10     // Literal integer 10
+            #False // Symbols start with a hash
+            foo    // Dereference the variable 'foo'
+
+   Match:
+      Match is how conditional logic is implemented in Delve.  It's a bit like a more general 'if' statement, though less powerful than patterns in Haskell - in good OO design, objects should not expose their members like a pattern does, anyway!
+
+      Match is triggered with the 'match' keyword, followed by an executable statement.  '->' is used to specify a symbol which is matched against.
+      Example: The equivalent of "if" might be written thus.
+
+         (match predicate     // Match against the variable predicate which references a literal symbol
+                (-> #True     // If it was True
+                    ((Yay!!!)   // call Yay!!!
+                     1000))     // return 1000
+                (-> #False    // If it was False
+                    ((boohoo)   // Call booohooo
+                     0)))       // return 0
+                
+      More sugar is needed! "if" should be defined as a macro which generates this sort of code!
+
+   Special:
+      Special statements are only available in 'eDelve', an embedded form of delve.  Special statements are currently used to embed Haskell code in order to extend the VM in a hybrid of Delve and Haskell, though the syntax should allow for different languages to embedded for different interpreters.
+      Two types of embedded statement are supported. 'hsimports' and 'hsexp'.  'hsimports' allows a user to import various Haskell modules.  This allows the functionality of the VM to be extended.  'hsexp' allows the user to insert a Haskell expression directly in to Delve code.  This expression is callable immediately, or can be stored to a value and then called, with or without arguments.
+      Example:
+         [hsimports]
+            import Data.Binary
+            import qualified Control.Arrow as A
+         [/hsimports]
+         [hsexp] liftIO $ putStrLn "I've been called from within Delve!" [/hsexp]
+
+   'hsexp's are run within the DelveM monad, which allows access to the VMs functionality.  In this way, arguments can be processed and, typically, a result put in the result register.   This is beyond the scope of this tutorial.  See the docs and/or read the source to get a feel for what you're doing.      
+
+Object oriented programming:
+   
+   Delve supports object oriented programming through it's meta-object-model.  This means that classes are objects too - when you want to instantiate a new object of a particular class, you call the "new" method belonging to a particular class.
+
+   Delve is like other object oriented systems in that the way ( though in Delve not in the only way ) to edit an object's properties is through interacting with the methods exposed by its interface.
+
+   The idea of the Delve object system is that the type system will allow the user to parametize over the "types" of Objects rather than just the class of which they are a member.  Therefore, little benefit is to be gained by syntactic restrictions over where an objects encapsulation can be broken ( most languages restrict this to subclasses, though ruby allows 'class << foo').  After all, if encapsulation is broken at any point - these "mutants" can be reasoned about at the type level by people using your code later!   
+
+   Calling Methods:
+      The traditional way to call a method is preserved in dune: seperate the name of the variable refering to an object and the method you wish to call, with a dot.
+         Example
+            (: new_account (Bank_Account.new)) // Call the new method the bank account class, assign this to the variable 'new_account'
+            (new_account.deposit (Int.new 50000)) // Deposit some money - notice that in the Delve kernel, since desugaring has taken place, there is a distinction between the primative value 50000 and the actually class of Ints which contain the methods for operating over the primative values.
+
+   Self:
+      The keyword "self" refers to the object currently being worked upon.
+
+   Defining methods:
+      A method is created with the keyword "me".  It is then followed by a possible empty list of formal arguments, and finally by a block of code.
+
+         Example:  The deposit method belonging to Bank_Account
+            (me (i) ((self.balance.+ i))) // Add i to the balance within the account
+   
+      Notice that the method is anonymous - it is not bound to a variable.  The next section describes how methods may be bound to a class.  However,  see the section on functional programming to see how Delve handles anonymous and higher order methods and closures.
+
+   Defining classes:
+
+   In the full system, I soppose there will be macros for doing this!  However, at the moment, defining a class requires an understanding of the meta-object-model.  It is quite simple.
+
+      Meta-object-model:
+         When a method 'foo' is called on an object O.
+         'foo' is first searched* for inside O.
+         Then inside O.class.instance_methods
+         Then inside O.class.super.instance_methods
+         ...Then inside O.class.super.super.instance_methods
+         
+         In heritance is carried out in this way - methods which cannot be found are defered to a super-class.  
+         *While this searching appears to be a run-time process, with a type-system, it could be known at compile time.  This way of thinking about the process would be semantically correct, however.
+
+   Here is a simple Boolean class in Delve.  This delegates some of its functionality to a symbol class.  Note that in the "match" statements, there is scope for sugaring, if the compiler makes literal symbols instances of the symbol class.
+
+// The class for booleans
+(: Bool (Object.new))
+
+// Boolean instance methods
+(: Bool.instance_methods (Object.new))
+
+// Bool's new method
+(: Bool.new
+   (me (sym)
+       ((: instance (Object.new)) 
+        (: instance.class self)
+        (instance.initialize (Symbol.new sym))
+        instance)))
+
+
+// Initialization
+// Just save the sym in self
+(: Bool.instance_methods.initialize
+   (me (sym)
+       ((: self.sym sym))))
+
+// The global false value
+(: False 
+   (Bool.new #False))
+
+// The global true value
+(: True
+   (Bool.new #True))
+
+// not
+(: Bool.instance_methods.not
+   (me ()
+       ((match self.sym.prim
+               (-> #True  (False))
+               (-> #False (True))))))
+// nand
+(: Bool.instance_methods.nand
+   (me (other)
+       ((match self.sym.prim
+               (-> #True ((match other.sym.prim
+                                 (-> #True (False))
+                                 (-> #False (True)))))
+               (-> #False (True))))))
+
+// and
+(: Bool.instance_methods.and
+   (me (other)
+       ((: n (self.nand other))
+  
+Functional programming:
+   
+   Delve is a sort of hybrid OO/Functional language.  What this means is while Delve supports objects, it supports things which are found in scheme, lisp, erlang and other functional languages.
+   For functional programmers, here is a list of features which dune supports.
+
+      Lexical closures ( or functions )
+      Higher order functions
+      Tail-call optimization
+      First-class continuations
+
+   Lexical closures/functions:
+   
+      A lexical closure or a function is created with the keyword "fu".  Its syntax is otherwise the same as a method.
+
+         Example: // A function which adds two numbers
+            (fu (x y) (x.+ y))
+         
+      A function differs from a method in that a method is associated with the object of which the method is a member, while a function is associated with the object inside of which the function was created.  In this way a function closures the scope of a particular object.  Both methods and functions however, close round the scope of their local environment ( the stack of local scopes ).
+ 
+   Consider:
+      // Create a new class of higher strategy objects
+      (: High_Strategy
+         (Object.new))
+      (: High_Strategy.instance_methods
+         (Object.new))
+
+      // A method which returns a function which can trigger changes to a High_Strategy instance's state
+      (: High_strategy.instance_methods.strategem
+         (me () 
+             ((fu ()
+                  (// ...
+                   // transform the state of a High_Strategy instance
+                   // ...
+                   )))))
+
+   Higher Order functions:
+      
+      A higher order function infers the ability of a function to recieve another, function as an argument.
+      This is a powerful technique, canonically used especially in list processing.
+      Contrived trivial example:
+      
+      // Create a function which takes another function as an argument, and input for that function, and applies that function to the input.
+      (: apply (fu (f x) ((f x))))
+
+      // Apply 'apply' to a function which adds its input to the number 42, and the number 1337
+      (apply (fu (x) ((: i (Int.new 3))
+                      (i.+ x))) 
+             (Int.new 1337))
+      // This returns 1340
+
+   Tail call optimization:
+
+      Tail calls in Delve are optimized.  This optimization is applied to the last statement in a block of code.  What this means is that a function can recursively call another ( possibly different ) function, without filling up memory!
+
+      Here is an example of a silly multiplication algorithm:
+
+         // Taken ( out of context ) from Simon Peyton Jones' book "Implementing Functional Languages: a tutorial", which I highly recommend!  ( Really it is a very good introduction to programming language design: if I had not read it Delve would not exist! )
+         (: mult_rec
+            (fu (n m d t)
+                  ((: diszero (d.= (Int.new 0)))
+                   (match diszero.sym.prim
+                          (-> #True  ((: mgtzero (m.> (Int.new 0)))
+                                      (match mgtzero.sym.prim
+                                             (-> #True ((mult_rec n (m.- (Int.new 1)) n t)))
+                                             (-> #False (t)))))
+                          (-> #False ((mult_rec n m (d.- (Int.new 1)) (t.+ (Int.new 1)))))))))
+
+         (: res (mult_rec (Int.new 100) (Int.new 200) (Int.new 0) (Int.new 0)))
+         (res.print)
+      >  20000
+
+      The recursive calls to mult_rec are optimized away, since they are at the end of a block.  Infact, this sort of function can run indefinaely without filling up memory!  However if you find a Delve function which does leak, and shouldn't, PLEASE report it as a bug!
+
+
+   First-class continuations:
+
+      Delve supports first class continuations.  For the uninitiated, a continuation can be though of a snapshot of the program's control flow - the steps which the program is going to take next.
+      Continuations are captured by the call/cc function.  This function takes another function ( or method ) as an argument.  It then passes the current continuation to the function.
+
+      When the continuation is called, control flow returns to the point at which the continuation was created ( the next statement after call/cc ).  For the time being, we'll call this a jump!
+
+      Example of an infinite loop using continuations:
+         (: cont #f)
+         (call/cc (fu (c) ((:! cont c)))) // Assign 'cont' to the current continuation
+         (cont #f) // jump to the continuation.  Oh, actually, the continuation is this step.  So it loops.
+
+      The continuation is actually another function, which takes one argument (call it 'X').  When the continuation is passed X, a jump is performed ( as above ), but X is put into the result register.  This means that the 'result' of call/cc can be assigned to a value.
+
+      Example of continuations returning a value:
+        // Returning a value here means an exception has been raised
+        (: err 
+           (call/cc (fu (handler)
+                        ( // ...
+                          // do some stuff, maybe IO but at some point an error occurs
+                          (handler (Symbol.new #IO_Exception))))))
+        (err.print) // Check to see which error occurred.
+
+      In fact, Delve aims to support exceptions entirely through the use of continuations!             
+

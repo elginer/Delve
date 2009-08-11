@@ -1,0 +1,70 @@
+Copyright (C) 2009 John Morrice
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.3
+or any later version published by the Free Software Foundation;
+with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
+A copy of the license is included in the file "DOC_COPYING" which you should have recieved along with this document.
+
+                 _____The Delve Programming language_____
+
+    ...with the Elgin Delve Compiler, and the Elgin Delve Virtual Machine
+
+                             TABLE OF CONTENTS
+                             1. Introduction
+                             2. Prerequisites
+                             3. Installation
+                             4. ...but how do the examples work?!
+                             5. License
+
+                             ***Introduction***
+
+    Delve is a new programming language, currently under heavy development.  
+Provided here is a compiler and interpreter for the "kernel" delve system.  
+That is, this is the sort of code a complete Delve system would deal with 
+once macros, the type system and general desugaring have already taken place.  
+( A little similar to "core" in Glasgow Haskell ).
+
+   For more information on Delve and the progress of development, see my blog 
+at http://killersmurf.blogspot.com, and the Delve repository at
+
+                             ***Prerequisites***
+
+   Delve first requires a recent GHC install.  See http://www.haskell.org/ghc.
+
+Tested with:
+spoon@utensil:~$ ghc --version
+The Glorious Glasgow Haskell Compilation System, version 6.10.3
+
+   Delve also requires the Haskell libraries "stream-fusion", "array", "binary", 
+"containers", "polyparse", "attoparsec", "haskell-src-exts" , "bytestring" and 
+"mtl", as well as "quickcheck" for tests.
+
+   Containers, array, bytestring, quickcheck and mtl come with GHC as standard.  
+The others may be installed via Hackage or Cabal or from their respecitive 
+repositories. 
+
+                             ***Installation***
+
+   First cd to the root Delve directory.
+
+Then on systems with sh installed.
+
+./build.sh
+
+On systems without sh, 
+
+runghc -cpp build.hs
+
+   This will build Delve, and create three new files in the current directory: edc,
+edvm, and edvm.dui.   A message will appear advising you to save edvm into /etc/delve.
+Heed this advice!
+
+   edc is the Elgin Delve Compiler.  edvm is the Elgin Delve Virtual Machine.  Try 
+running each without arguments.  They will print helpful usage information.
+
+                      ***But how do the examples work!?*** 
+
+   Good question!  I have attempted to explain myself in the file "TUTORIAL".                         
+
+Delve is released under the terms of the GNU General Public License v3.  See the file 'COPYING'.
+

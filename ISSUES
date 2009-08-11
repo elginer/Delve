@@ -1,0 +1,5 @@
+When the virtual machine is compiled with -O2, Dune garbage collection seems to disappear.  Perhaps -O2 optimizes away some of the strictness?  It's certainly faster. Tue 11 Aug: spoon
+
+I have an example of two recursive functions which mutually call each others continuations.  It leaks memory for some reason.  delve/CoRoutines.edelv -- Tue 11 Aug: spoon
+
+The VM is really slow.  Perhaps it would be better to write it in C++ or D.  I like the sound of D!  I've got a bit of a design in my head for it too! -- Tue 11 Aug: spoon

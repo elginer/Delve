@@ -1,0 +1,40 @@
+//    The Delve programming language
+//    Copyright 2009 John Morrice
+//
+//    Distributed under the terms of the GNU General Public License v3, or ( at your option ) any later version.
+//
+//    This file is part of Delve.
+//
+//    Delve is free software: you can redistribute it and/or modify
+//    it under the terms of the GNU General Public License as published by
+//    the Free Software Foundation, either version 3 of the License, or
+//    (at your option) any later version.
+//
+//    Delve is distributed in the hope that it will be useful,
+//    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//    GNU General Public License for more details.
+//
+//    You should have received a copy of the GNU General Public License
+//    along with Delve.  If not, see <http://www.gnu.org/licenses/>.
+
+// A class so we can support symbols operations in bytecode ( printing and such )
+[hsimports]
+import DHelper
+[/hsimports]
+
+(: Symbol (Object.new))
+(: Symbol.instance_methods (Object.new))
+// The initialize method
+(: Symbol.instance_methods.initialize
+   (me (s)
+       ((: self.prim s)))) // Assign the primative symbol into itself
+(: Symbol.instance_methods.print
+   (me ()
+       (([hsexp] print_sym [/hsexp] self.prim))))
+(: Symbol.new
+   (me (x)
+       ((: instance (Object.new))
+        (: instance.class self)
+        (instance.initialize x)
+        instance)))
